@@ -1,157 +1,137 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chinese Reading Helper</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- ダークUI -->
   <style>
     body {
-      font-family: system-ui, -apple-system, "Noto Sans CJK JP", sans-serif;
-      padding: 24px;
-      line-height: 1.6;
-      background: #fafafa;
-      color: #222;
+      background: #0f0f0f;
+      color: #e5e5e5;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      margin: 20px;
     }
 
     h1 {
-      font-size: 1.4rem;
-      margin-bottom: 0.5rem;
+      color: #f0f0f0;
+      margin-bottom: 4px;
     }
 
-    .desc {
-      color: #555;
-      margin-bottom: 1.5rem;
+    .subtitle {
+      color: #b5b5b5;
+      margin-bottom: 20px;
+      font-size: 0.95em;
     }
 
     button {
-      padding: 10px 18px;
-      font-size: 1rem;
-      border: none;
+      background: #2a2a2a;
+      color: #ffffff;
+      border: 1px solid #3a3a3a;
       border-radius: 6px;
-      background: #222;
-      color: #fff;
-      cursor: pointer;
+      padding: 12px 18px;
+      font-size: 1em;
     }
 
-    input[type="file"] {
-      display: none;
+    button:active {
+      background: #333333;
     }
 
     .note {
-      font-size: 0.8rem;
-      color: #666;
-      margin-top: 1rem;
+      margin-top: 10px;
+      color: #9a9a9a;
+      font-size: 0.85em;
     }
 
-    hr {
-      margin: 2rem 0;
-      border: none;
-      border-top: 1px solid #ddd;
+    .section {
+      margin-top: 28px;
     }
 
-    .block {
-      margin-bottom: 1.25rem;
-    }
-
-    .block strong {
+    label {
       display: block;
-      margin-bottom: 0.25rem;
+      margin-bottom: 6px;
+      color: #f0f0f0;
+      font-weight: bold;
     }
 
-    .result {
-      background: #fff;
-      padding: 12px;
+    textarea {
+      background: #1a1a1a;
+      color: #e5e5e5;
+      border: 1px solid #2f2f2f;
       border-radius: 6px;
-      box-shadow: 0 0 0 1px #ddd;
-      white-space: pre-wrap;
-      min-height: 2.5em;
+      padding: 10px;
+      width: 100%;
+      min-height: 90px;
+      box-sizing: border-box;
+      font-size: 0.95em;
     }
   </style>
+
+  <!-- 普通話：拼音（声調付き） -->
+  <script src="https://unpkg.com/pinyin-pro"></script>
+
+  <!-- 広東語：Jyutping（数字） -->
+  <script src="https://unpkg.com/jyutping"></script>
 </head>
+
 <body>
 
-  <!-- タイトル -->
   <h1>Chinese Reading Helper</h1>
-
-  <div class="desc">
-    普通話・広東語の<br>
-    発音を見るためのツール
+  <div class="subtitle">
+    普通話・広東語の発音を見るためのツール
   </div>
 
   <!-- 画像アップロード -->
-  <label for="imageInput">
-    <button>写真をアップロード</button>
-  </label>
-  <input type="file" id="imageInput" accept="image/*">
+  <input type="file" id="imageInput" accept="image/*" />
+  <br /><br />
+  <button onclick="processImage()">写真をアップロード</button>
 
-  <!-- 注意書き -->
   <div class="note">
     ※ 縦書き未対応（横向き撮影推奨）
   </div>
 
-  <!-- 結果表示 -->
-  <hr>
-
-  <div id="resultArea">
-
-    <div class="block">
-      <strong>原文：</strong>
-      <div id="originalText" class="result">—</div>
-    </div>
-
-    <div class="block">
-      <strong>普通話（拼音）：</strong>
-      <div id="mandarinText" class="result">—</div>
-    </div>
-
-    <div class="block">
-      <strong>広東語（Jyutping）：</strong>
-      <div id="cantoneseText" class="result">—</div>
-    </div>
-
+  <!-- 原文 -->
+  <div class="section">
+    <label>原文：</label>
+    <textarea id="originalText" readonly>—</textarea>
   </div>
 
-  <!-- tesseract.js -->
-  <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- 普通話 -->
+  <div class="section">
+    <label>普通話（拼音）：</label>
+    <textarea id="mandarinText" readonly>—</textarea>
+  </div>
 
-  <!-- メイン処理 -->
+  <!-- 広東語 -->
+  <div class="section">
+    <label>広東語（Jyutping）：</label>
+    <textarea id="cantoneseText" readonly>—</textarea>
+  </div>
+
+  <!-- ロジック -->
   <script>
-    const imageInput = document.getElementById('imageInput');
-    const originalText = document.getElementById('originalText');
-    const mandarinText = document.getElementById('mandarinText');
-    const cantoneseText = document.getElementById('cantoneseText');
+    function processImage() {
+      /*
+        ※ OCR部分は今までの実装に差し替えてOK
+        ここでは動作確認用にサンプル文字列を使用
+      */
+      const text = "你好 世界";
 
-    async function runOCR(file) {
-      const { data } = await Tesseract.recognize(
-        file,
-        'chi_tra', // 繁体字。必要なら 'chi_sim' に変更
-        {
-          logger: m => {
-            // console.log(m); // 進捗を見たいときは有効化
-          }
-        }
-      );
-      return data.text;
+      // 原文
+      document.getElementById("originalText").value = text;
+
+      // 普通話（声調付き拼音）
+      const mandarin = pinyinPro.pinyin(text, {
+        toneType: "symbol",
+        type: "string"
+      });
+      document.getElementById("mandarinText").value = mandarin;
+
+      // 広東語（Jyutping・数字）
+      const jyutping = Jyutping.getJyutping(text);
+      document.getElementById("cantoneseText").value = jyutping;
     }
-
-    imageInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      originalText.textContent = '読み取り中…';
-      mandarinText.textContent = '—';
-      cantoneseText.textContent = '—';
-
-      try {
-        const text = await runOCR(file);
-        originalText.textContent =
-          text.trim() || '（文字が検出されませんでした）';
-      } catch (err) {
-        originalText.textContent = '読み取りに失敗しました';
-        console.error(err);
-      }
-    });
   </script>
 
 </body>
