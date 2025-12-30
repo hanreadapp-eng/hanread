@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HanRead</title>
 
-  <!-- ダークUI -->
   <style>
     body {
       background: #0f0f0f;
@@ -13,117 +12,60 @@
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
       margin: 20px;
     }
-
-    h1 {
-      color: #f5f5f5;
-      margin-bottom: 4px;
-    }
-
-    .subtitle {
-      color: #b5b5b5;
-      margin-bottom: 20px;
-      font-size: 0.95em;
-    }
-
-    input[type="file"] {
-      color: #e5e5e5;
-    }
-
+    h1 { color: #f0f0f0; }
+    .subtitle { color: #b5b5b5; margin-bottom: 20px; }
     button {
       background: #2a2a2a;
-      color: #ffffff;
+      color: #fff;
       border: 1px solid #3a3a3a;
-      border-radius: 8px;
+      border-radius: 6px;
       padding: 12px 18px;
-      font-size: 1em;
     }
-
-    button:active {
-      background: #333333;
-    }
-
-    .note {
-      margin-top: 10px;
-      color: #9a9a9a;
-      font-size: 0.85em;
-    }
-
-    .section {
-      margin-top: 28px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 6px;
-      color: #f0f0f0;
-      font-weight: bold;
-    }
-
     textarea {
       background: #1a1a1a;
       color: #e5e5e5;
       border: 1px solid #2f2f2f;
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: 6px;
+      padding: 10px;
       width: 100%;
-      min-height: 100px;
-      box-sizing: border-box;
-      font-size: 0.95em;
-      line-height: 1.5;
+      min-height: 90px;
     }
+    .section { margin-top: 24px; }
+    .note { color: #9a9a9a; font-size: 0.85em; }
   </style>
 
-  <!-- 普通話：拼音（声調付き） -->
+  <!-- 拼音 -->
   <script src="https://unpkg.com/pinyin-pro"></script>
-
-  <!-- 広東語：Jyutping -->
-  <script src="https://unpkg.com/jyutping"></script>
 
   <!-- OCR -->
   <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 
 <body>
-
   <h1>HanRead</h1>
-  <div class="subtitle">
-    中国語（普通話・広東語）を読むためのWebツール
-  </div>
+  <div class="subtitle">中国語を読むためのWebツール</div>
 
-  <!-- ファイル選択 -->
   <input type="file" id="imageInput" accept="image/*" />
   <br /><br />
   <button onclick="processImage()">写真をアップロード</button>
 
-  <div class="note">
-    ※ 縦書き未対応（横向き撮影推奨）
-  </div>
+  <div class="note">※ 縦書き未対応（横向き撮影推奨）</div>
 
-  <!-- 原文 -->
   <div class="section">
     <label>原文：</label>
     <textarea id="originalText" readonly>—</textarea>
   </div>
 
-  <!-- 普通話 -->
   <div class="section">
     <label>普通話（拼音）：</label>
     <textarea id="mandarinText" readonly>—</textarea>
   </div>
 
-  <!-- 広東語 -->
-  <div class="section">
-    <label>広東語（Jyutping）：</label>
-    <textarea id="cantoneseText" readonly>—</textarea>
-  </div>
-
-  <!-- ロジック -->
   <script>
     async function processImage() {
       const input = document.getElementById("imageInput");
       const original = document.getElementById("originalText");
       const mandarin = document.getElementById("mandarinText");
-      const cantonese = document.getElementById("cantoneseText");
 
       if (!input.files.length) {
         alert("画像を選んでください");
@@ -132,35 +74,19 @@
 
       original.value = "読み取り中…";
       mandarin.value = "—";
-      cantonese.value = "—";
 
-      try {
-        const result = await Tesseract.recognize(
-          input.files[0],
-          "chi_sim+chi_tra",
-          {
-            logger: m => console.log(m)
-          }
-        );
+      const result = await Tesseract.recognize(
+        input.files[0],
+        "chi_sim+chi_tra"
+      );
 
-        const text = result.data.text.trim();
+      const text = result.data.text.trim();
+      original.value = text || "（文字が検出されませんでした）";
 
-        // 原文
-        original.value = text || "（文字が検出されませんでした）";
-
-        if (text) {
-          // 普通話（声調付き）
-          mandarin.value = pinyin(text, { toneType: "symbol" });
-
-          // 広東語（Jyutping）
-          cantonese.value = jyutping.get(text);
-        }
-      } catch (e) {
-        original.value = "エラーが発生しました";
-        console.error(e);
+      if (text) {
+        mandarin.value = pinyinPro.pinyin(text, { toneType: "symbol" });
       }
     }
   </script>
-
 </body>
 </html>
