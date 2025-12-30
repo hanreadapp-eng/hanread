@@ -114,46 +114,46 @@
 
   <!-- ロジック -->
   <script>
-    async function processImage() {
-      const input = document.getElementById("imageInput");
-      const original = document.getElementById("originalText");
-      const mandarin = document.getElementById("mandarinText");
-      const cantonese = document.getElementById("cantoneseText");
+async function processImage() {
+  const input = document.getElementById("imageInput");
+  const original = document.getElementById("originalText");
+  const mandarin = document.getElementById("mandarinText");
+  const cantonese = document.getElementById("cantoneseText");
 
-      if (!input.files.length) {
-        alert("画像を選んでください");
-        return;
-      }
+  if (!input.files.length) {
+    alert("画像を選んでください");
+    return;
+  }
 
-      const imageFile = input.files[0];
+  const imageFile = input.files[0];
 
-      original.value = "読み取り中…";
-      mandarin.value = "—";
-      cantonese.value = "—";
+  original.value = "読み取り中…";
+  mandarin.value = "—";
+  cantonese.value = "—";
 
-      const result = await Tesseract.recognize(
-        imageFile,
-        "chi_sim+chi_tra",
-        {
-          logger: m => console.log(m)
-        }
-      );
+  const result = await Tesseract.recognize(
+    imageFile,
+    "chi_sim+chi_tra",
+    { logger: m => console.log(m) }
+  );
 
-      const text = result.data.text;
+  const text = result.data.text.trim();
 
-      // 原文
-      original.value = text;
+  // 原文
+  original.value = text || "（文字が検出されませんでした）";
 
-      // 普通話（拼音・声調付き）
-      mandarin.value = pinyinPro.pinyin(text, {
-        toneType: "symbol",
-        type: "array"
-      }).join(" ");
+  // 普通話（声調付き拼音）
+  if (text) {
+    mandarin.value = pinyin(text, { toneType: "symbol" });
+  }
 
-      // 広東語（Jyutping・数字）
-      cantonese.value = jyutping.getJyutpingText(text);
-    }
-  </script>
+  // 広東語（Jyutping）
+  if (text) {
+    cantonese.value = jyutping.get(text);
+  }
+}
+</script>
 
 </body>
 </html>
+
