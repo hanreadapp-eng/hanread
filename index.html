@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chinese Reading Helper</title>
+  <title>HanRead</title>
 
   <!-- ダークUI -->
   <style>
@@ -73,13 +73,16 @@
 
   <!-- 広東語：Jyutping（数字） -->
   <script src="https://unpkg.com/jyutping"></script>
+
+  <!-- OCR：Tesseract.js -->
+  <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 
 <body>
 
-  <h1>Chinese Reading Helper</h1>
+  <h1>HanRead</h1>
   <div class="subtitle">
-    普通話・広東語の発音を見るためのツール
+    中国語（普通話・広東語）を読むためのWebツール
   </div>
 
   <!-- 画像アップロード -->
@@ -111,26 +114,44 @@
 
   <!-- ロジック -->
   <script>
-    function processImage() {
-      /*
-        ※ OCR部分は今までの実装に差し替えてOK
-        ここでは動作確認用にサンプル文字列を使用
-      */
-      const text = "你好 世界";
+    async function processImage() {
+      const input = document.getElementById("imageInput");
+      const original = document.getElementById("originalText");
+      const mandarin = document.getElementById("mandarinText");
+      const cantonese = document.getElementById("cantoneseText");
+
+      if (!input.files.length) {
+        alert("画像を選んでください");
+        return;
+      }
+
+      const imageFile = input.files[0];
+
+      original.value = "読み取り中…";
+      mandarin.value = "—";
+      cantonese.value = "—";
+
+      const result = await Tesseract.recognize(
+        imageFile,
+        "chi_sim+chi_tra",
+        {
+          logger: m => console.log(m)
+        }
+      );
+
+      const text = result.data.text;
 
       // 原文
-      document.getElementById("originalText").value = text;
+      original.value = text;
 
-      // 普通話（声調付き拼音）
-      const mandarin = pinyinPro.pinyin(text, {
+      // 普通話（拼音・声調付き）
+      mandarin.value = pinyinPro.pinyin(text, {
         toneType: "symbol",
-        type: "string"
-      });
-      document.getElementById("mandarinText").value = mandarin;
+        type: "array"
+      }).join(" ");
 
       // 広東語（Jyutping・数字）
-      const jyutping = Jyutping.getJyutping(text);
-      document.getElementById("cantoneseText").value = jyutping;
+      cantonese.value = jyutping.getJyutpingText(text);
     }
   </script>
 
